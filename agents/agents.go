@@ -10,23 +10,6 @@ import (
 	"patroncli/types"
 )
 
-func Execute(args []string) {
-	if len(args) < 1 {
-		fmt.Println("agents requires a subcommand like 'list'")
-		os.Exit(1)
-	}
-
-	switch args[0] {
-	case "list":
-		ListCommand(args[1:])
-	case "describe":
-		DescribeCommand(args[1:])
-	default:
-		fmt.Printf("unknown agents subcommand: %s\n", args[0])
-		os.Exit(1)
-	}
-}
-
 func ListCommand(args []string) {
 	// Create a flag set for the `list` subcommand
 	listCmd := flag.NewFlagSet("list", flag.ExitOnError)
