@@ -2,14 +2,11 @@ package auth
 
 import (
 	"bufio"
-	"bytes"
-	"crypto/tls"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
+	"patroncli/common"
 	"patroncli/config"
 	"patroncli/types"
 	"strings"
@@ -40,9 +37,7 @@ func LoginCommand(args []string) {
 	performLogin(*profileName)
 }
 
-// performLogin handles the actual login logic
 func performLogin(profileName string) {
-	// Prompt the user for a password and login
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Print("Enter password: ")
 	password, _ := reader.ReadString('\n')
@@ -67,32 +62,23 @@ func performLogin(profileName string) {
 	}
 
 	url := fmt.Sprintf("https://%s:%s/api/login", profile.IP, profile.Port)
-	body := map[string]interface{}{
+	requestBody := map[string]interface{}{
 		"username": profile.Username,
 		"password": password,
 		"duration": profile.LoginTime,
 	}
-	bodyData, _ := json.Marshal(body)
 
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
-	}
-
-	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(bodyData))
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
+	responseBody, err := common.MakeRequest("POST", url, profile, requestBody)
 	if err != nil {
-		fmt.Println("Request error:", err)
+		fmt.Printf("Request error: %v\n", err)
 		return
 	}
-	defer resp.Body.Close()
 
-	respData, _ := io.ReadAll(resp.Body)
 	var result map[string]string
-	_ = json.Unmarshal(respData, &result)
+	if err := json.Unmarshal(responseBody, &result); err != nil {
+		fmt.Println("Failed to parse login response")
+		return
+	}
 
 	token := result["token"]
 	if token == "" {
@@ -100,16 +86,14 @@ func performLogin(profileName string) {
 		return
 	}
 
-	// Save the token
 	cred := types.Credential{
 		Profile: profile.Name,
 		IP:      profile.IP,
 		Port:    profile.Port,
 		Token:   token,
 	}
-	err = config.SaveCredential(cred)
-	if err != nil {
-		fmt.Println("Error saving credentials:", err)
+	if err := config.SaveCredential(cred); err != nil {
+		fmt.Printf("Error saving credentials: %v\n", err)
 	} else {
 		fmt.Println("Login successful, token saved!")
 	}

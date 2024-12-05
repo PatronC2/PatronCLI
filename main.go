@@ -51,7 +51,7 @@ func showHelp(commands map[string]struct {
 	Execute func(args []string)
 	Help    string
 }) {
-	fmt.Println("Usage: patroncli <command> [options]")
+	fmt.Println("Usage: patron <command> [options]")
 	fmt.Println("\nAvailable commands:")
 	for name, cmd := range commands {
 		fmt.Printf("  %-10s %s\n", name, cmd.Help)
