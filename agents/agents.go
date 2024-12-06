@@ -11,16 +11,12 @@ import (
 )
 
 func ListCommand(args []string) {
-	// Create a flag set for the `list` subcommand
 	listCmd := flag.NewFlagSet("list", flag.ExitOnError)
 	profileName := listCmd.String("profile", "", "The profile name to use")
-	filterKey := listCmd.String("filter-key", "", "The key to filter agents by")
-	filterValue := listCmd.String("filter-value", "", "The value to filter agents by")
+	filter := listCmd.String("filter", "", "Filter agents by criteria (e.g., 'tags.key=value')")
 
-	// Parse the flags
 	listCmd.Parse(args)
 
-	// Determine the profile to use
 	selectedProfile := os.Getenv("PATRON_PROFILE")
 	if *profileName != "" {
 		selectedProfile = *profileName
@@ -31,15 +27,13 @@ func ListCommand(args []string) {
 		os.Exit(1)
 	}
 
-	// Fetch the profile details
 	profile, err := getProfile(selectedProfile)
 	if err != nil {
 		fmt.Println("Error fetching profile:", err)
 		os.Exit(1)
 	}
 
-	// Make the GET request to /api/agents with filtering
-	err = fetchAgents(profile, *filterKey, *filterValue)
+	err = fetchAgents(profile, *filter)
 	if err != nil {
 		fmt.Println("Error fetching agents:", err)
 		os.Exit(1)
@@ -108,7 +102,7 @@ func getProfile(profileName string) (types.Profile, error) {
 	return types.Profile{}, fmt.Errorf("profile '%s' not found", profileName)
 }
 
-func fetchAgents(profile types.Profile, filterKey, filterValue string) error {
+func fetchAgents(profile types.Profile, filter string) error {
 	url := fmt.Sprintf("https://%s:%s/api/agents", profile.IP, profile.Port)
 
 	body, err := common.MakeRequest("GET", url, profile, nil)
@@ -116,17 +110,14 @@ func fetchAgents(profile types.Profile, filterKey, filterValue string) error {
 		return fmt.Errorf("error fetching agents: %w", err)
 	}
 
-	var response map[string]interface{}
+	var response struct {
+		Data []map[string]interface{} `json:"data"`
+	}
 	if err := json.Unmarshal(body, &response); err != nil {
 		return fmt.Errorf("failed to parse response: %w", err)
 	}
 
-	agents, ok := response["data"].([]interface{})
-	if !ok {
-		return fmt.Errorf("response does not contain 'data' field or it is not an array")
-	}
-
-	filteredAgents := common.FilterItems(agents, filterKey, filterValue)
+	filteredAgents := common.FilterItemsWithTags(response.Data, filter)
 
 	output, err := json.MarshalIndent(filteredAgents, "", "  ")
 	if err != nil {
