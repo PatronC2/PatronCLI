@@ -68,7 +68,13 @@ func performLogin(profileName string) {
 		"duration": profile.LoginTime,
 	}
 
-	responseBody, err := common.MakeRequest("POST", url, profile, requestBody)
+	headers := types.Credential{
+		Profile: profile.Name,
+		IP:      profile.IP,
+		Port:    profile.Port,
+	}
+
+	responseBody, err := common.MakeRequest("POST", url, headers, requestBody)
 	if err != nil {
 		fmt.Printf("Request error: %v\n", err)
 		return

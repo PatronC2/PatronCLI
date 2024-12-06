@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"patroncli/common"
-	"patroncli/config"
 	"patroncli/types"
 )
 
@@ -27,13 +26,9 @@ func ListCommand(args []string) {
 		os.Exit(1)
 	}
 
-	profile, err := getProfile(selectedProfile)
-	if err != nil {
-		fmt.Println("Error fetching profile:", err)
-		os.Exit(1)
-	}
+	profile := common.GetCreds(selectedProfile)
 
-	err = fetchAgents(profile, *filter)
+	err := fetchAgents(profile, *filter)
 	if err != nil {
 		fmt.Println("Error fetching agents:", err)
 		os.Exit(1)
@@ -66,43 +61,16 @@ func DescribeCommand(args []string) {
 	}
 
 	// Fetch the profile details
-	profile, err := getProfile(selectedProfile)
-	if err != nil {
-		fmt.Println("Error fetching profile:", err)
-		os.Exit(1)
-	}
-
+	profile := common.GetCreds(selectedProfile)
 	// Make the GET request to /api/agent with filtering
-	err = describeAgent(profile, *agentId)
+	err := describeAgent(profile, *agentId)
 	if err != nil {
 		fmt.Println("Error fetching agent:", err)
 		os.Exit(1)
 	}
 }
 
-func getProfile(profileName string) (types.Profile, error) {
-	profilesPath := config.GetConfigPath()
-	data, err := os.ReadFile(profilesPath)
-	if err != nil {
-		return types.Profile{}, fmt.Errorf("failed to read config file: %w", err)
-	}
-
-	var profiles []types.Profile
-	err = json.Unmarshal(data, &profiles)
-	if err != nil {
-		return types.Profile{}, fmt.Errorf("failed to parse config file: %w", err)
-	}
-
-	for _, profile := range profiles {
-		if profile.Name == profileName {
-			return profile, nil
-		}
-	}
-
-	return types.Profile{}, fmt.Errorf("profile '%s' not found", profileName)
-}
-
-func fetchAgents(profile types.Profile, filter string) error {
+func fetchAgents(profile types.Credential, filter string) error {
 	url := fmt.Sprintf("https://%s:%s/api/agents", profile.IP, profile.Port)
 
 	body, err := common.MakeRequest("GET", url, profile, nil)
@@ -128,7 +96,7 @@ func fetchAgents(profile types.Profile, filter string) error {
 	return nil
 }
 
-func describeAgent(profile types.Profile, agentId string) error {
+func describeAgent(profile types.Credential, agentId string) error {
 	url := fmt.Sprintf("https://%s:%s/api/agent/%s", profile.IP, profile.Port, agentId)
 
 	body, err := common.MakeRequest("GET", url, profile, nil)
@@ -153,25 +121,4 @@ func describeAgent(profile types.Profile, agentId string) error {
 
 	fmt.Println(string(output))
 	return nil
-}
-
-func getProfileToken(profileName string) string {
-	credentialsPath := config.GetCredentialsPath()
-	data, err := os.ReadFile(credentialsPath)
-	if err != nil {
-		fmt.Printf("Warning: failed to read credentials file: %v\n", err)
-		return ""
-	}
-
-	var credentials []types.Credential
-	_ = json.Unmarshal(data, &credentials)
-
-	for _, cred := range credentials {
-		if cred.Profile == profileName {
-			return cred.Token
-		}
-	}
-
-	fmt.Printf("Warning: token not found for profile '%s'\n", profileName)
-	return ""
 }
