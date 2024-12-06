@@ -34,11 +34,7 @@ func ExecCommand(args []string) {
 		os.Exit(1)
 	}
 
-	profile, err := getProfile(*profileName)
-	if err != nil {
-		fmt.Printf("Error fetching profile: %v\n", err)
-		os.Exit(1)
-	}
+	profile := common.GetCreds(*profileName)
 
 	url := fmt.Sprintf("https://%s:%s/api/command/%s", profile.IP, profile.Port, *agentID)
 	requestBody := map[string]string{
@@ -79,11 +75,7 @@ func GetCommands(args []string) {
 		os.Exit(1)
 	}
 
-	profile, err := getProfile(*profileName)
-	if err != nil {
-		fmt.Printf("Error fetching profile: %v\n", err)
-		os.Exit(1)
-	}
+	profile := common.GetCreds(*profileName)
 
 	url := fmt.Sprintf("https://%s:%s/api/commands/%s", profile.IP, profile.Port, *agentID)
 	responseBody, err := common.MakeRequest("GET", url, profile, nil)

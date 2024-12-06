@@ -13,7 +13,7 @@ import (
 )
 
 // makeRequest is a generic function for API requests (GET, POST, PUT, DELETE)
-func MakeRequest(method, url string, profile types.Profile, body interface{}) ([]byte, error) {
+func MakeRequest(method, url string, profile types.Credential, body interface{}) ([]byte, error) {
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
@@ -37,7 +37,7 @@ func MakeRequest(method, url string, profile types.Profile, body interface{}) ([
 	}
 
 	// Add headers
-	req.Header.Set("Authorization", GetProfileToken(profile.Name))
+	req.Header.Set("Authorization", profile.Token)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(req)
@@ -58,28 +58,24 @@ func MakeRequest(method, url string, profile types.Profile, body interface{}) ([
 	return responseData, nil
 }
 
-// GetProfileToken retrieves the token for a given profile
-func GetProfileToken(profileName string) string {
+func GetCreds(profileName string) types.Credential {
 	credentialsPath := config.GetCredentialsPath()
 	data, err := os.ReadFile(credentialsPath)
 	if err != nil {
 		fmt.Printf("Warning: failed to read credentials file: %v\n", err)
-		return ""
+		return types.Credential{}
 	}
 
-	var credentials []types.Credential
-	err = json.Unmarshal(data, &credentials)
+	var creds []types.Credential
+	err = json.Unmarshal(data, &creds)
 	if err != nil {
-		fmt.Printf("Warning: failed to parse credentials file: %v\n", err)
-		return ""
+		return types.Credential{}
 	}
 
-	for _, cred := range credentials {
+	for _, cred := range creds {
 		if cred.Profile == profileName {
-			return cred.Token
+			return cred
 		}
 	}
-
-	fmt.Printf("Warning: token not found for profile '%s'\n", profileName)
-	return ""
+	return types.Credential{}
 }
