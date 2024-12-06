@@ -8,12 +8,15 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o main .
+ARG GOOS=linux
+ARG GOARCH=amd64
+
+RUN CGO_ENABLED=0 GOOS=$GOOS GOARCH=$GOARCH go build -o /root/main .
 
 FROM alpine:latest
 
 WORKDIR /root/
 
-COPY --from=builder /app/main .
+COPY --from=builder /root/main .
 
 CMD ["./main"]
