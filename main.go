@@ -56,5 +56,5 @@ func showHelp(commands map[string]struct {
 	for name, cmd := range commands {
 		fmt.Printf("  %-10s %s\n", name, cmd.Help)
 	}
-	fmt.Println("\nRun 'patroncli help' to see this message.")
+	fmt.Println("\nRun 'patron help' to see this message.")
 }
