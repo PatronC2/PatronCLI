@@ -1,11 +1,10 @@
-package auth
+package agents
 
 import (
 	"fmt"
 	"os"
 )
 
-// Execute processes the `auth` subcommands
 func Execute(args []string) {
 	var commands map[string]struct {
 		Execute func(args []string)
@@ -16,13 +15,21 @@ func Execute(args []string) {
 		Execute func(args []string)
 		Help    string
 	}{
-		"configure": {
-			Execute: func(args []string) { Configure() },
-			Help:    "Configure a new profile for authentication.",
+		"list": {
+			Execute: ListCommand,
+			Help:    "List all agents, optionally filtering by criteria.",
 		},
-		"login": {
-			Execute: LoginCommand,
-			Help:    "Login using an existing profile.",
+		"describe": {
+			Execute: DescribeCommand,
+			Help:    "Describe a specific agent using --agent-id.",
+		},
+		"send-command": {
+			Execute: ExecCommand,
+			Help:    "Send a command to an agent using --agent-id and --command.",
+		},
+		"get-commands": {
+			Execute: GetCommands,
+			Help:    "Retrieve command responses from an agent using --agent-id.",
 		},
 		"help": {
 			Execute: func(args []string) { displayHelp(commands) },
@@ -38,7 +45,7 @@ func Execute(args []string) {
 	commandName := args[0]
 	command, exists := commands[commandName]
 	if !exists {
-		fmt.Printf("Unknown auth subcommand: %s\n\n", commandName)
+		fmt.Printf("Unknown agents subcommand: %s\n\n", commandName)
 		displayHelp(commands)
 		os.Exit(1)
 	}
@@ -50,10 +57,10 @@ func displayHelp(commands map[string]struct {
 	Execute func(args []string)
 	Help    string
 }) {
-	fmt.Println("Usage: patron auth <subcommand> [options]")
-	fmt.Println("\nAvailable auth subcommands:")
+	fmt.Println("Usage: patron agents <subcommand> [options]")
+	fmt.Println("\nAvailable agents subcommands:")
 	for name, cmd := range commands {
 		fmt.Printf("  %-15s %s\n", name, cmd.Help)
 	}
-	fmt.Println("\nRun 'patron auth help' for more information about a specific subcommand.")
+	fmt.Println("\nRun 'patron agents help' for more information about a specific subcommand.")
 }

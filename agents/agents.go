@@ -1,41 +1,53 @@
 package agents
 
 import (
-	"crypto/tls"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
+	"patroncli/common"
 	"patroncli/config"
 	"patroncli/types"
 )
 
-func Execute(args []string) {
-	if len(args) < 1 {
-		fmt.Println("agents requires a subcommand like 'list'")
+func ListCommand(args []string) {
+	listCmd := flag.NewFlagSet("list", flag.ExitOnError)
+	profileName := listCmd.String("profile", "", "The profile name to use")
+	filter := listCmd.String("filter", "", "Filter agents by criteria (e.g., 'tags.key=value')")
+
+	listCmd.Parse(args)
+
+	selectedProfile := os.Getenv("PATRON_PROFILE")
+	if *profileName != "" {
+		selectedProfile = *profileName
+	}
+
+	if selectedProfile == "" {
+		fmt.Println("No profile specified. Use --profile flag or set the PATRON_PROFILE environment variable.")
 		os.Exit(1)
 	}
 
-	switch args[0] {
-	case "list":
-		ListCommand(args[1:])
-	default:
-		fmt.Printf("unknown agents subcommand: %s\n", args[0])
+	profile, err := getProfile(selectedProfile)
+	if err != nil {
+		fmt.Println("Error fetching profile:", err)
+		os.Exit(1)
+	}
+
+	err = fetchAgents(profile, *filter)
+	if err != nil {
+		fmt.Println("Error fetching agents:", err)
 		os.Exit(1)
 	}
 }
 
-func ListCommand(args []string) {
-	// Create a flag set for the `list` subcommand
-	listCmd := flag.NewFlagSet("list", flag.ExitOnError)
-	profileName := listCmd.String("profile", "", "The profile name to use")
-	filterKey := listCmd.String("filter-key", "", "The key to filter agents by")
-	filterValue := listCmd.String("filter-value", "", "The value to filter agents by")
+func DescribeCommand(args []string) {
+	// Create a flag set for the `describe` subcommand
+	describeCmd := flag.NewFlagSet("describe", flag.ExitOnError)
+	profileName := describeCmd.String("profile", "", "The profile name to use")
+	agentId := describeCmd.String("agent-id", "", "The agent ID to get")
 
 	// Parse the flags
-	listCmd.Parse(args)
+	describeCmd.Parse(args)
 
 	// Determine the profile to use
 	selectedProfile := os.Getenv("PATRON_PROFILE")
@@ -48,6 +60,11 @@ func ListCommand(args []string) {
 		os.Exit(1)
 	}
 
+	if *agentId == "" {
+		fmt.Println("No agent specified. Use --agent-id")
+		os.Exit(1)
+	}
+
 	// Fetch the profile details
 	profile, err := getProfile(selectedProfile)
 	if err != nil {
@@ -55,10 +72,10 @@ func ListCommand(args []string) {
 		os.Exit(1)
 	}
 
-	// Make the GET request to /api/agents with filtering
-	err = fetchAgents(profile, *filterKey, *filterValue)
+	// Make the GET request to /api/agent with filtering
+	err = describeAgent(profile, *agentId)
 	if err != nil {
-		fmt.Println("Error fetching agents:", err)
+		fmt.Println("Error fetching agent:", err)
 		os.Exit(1)
 	}
 }
@@ -85,79 +102,55 @@ func getProfile(profileName string) (types.Profile, error) {
 	return types.Profile{}, fmt.Errorf("profile '%s' not found", profileName)
 }
 
-func fetchAgents(profile types.Profile, filterKey, filterValue string) error {
+func fetchAgents(profile types.Profile, filter string) error {
 	url := fmt.Sprintf("https://%s:%s/api/agents", profile.IP, profile.Port)
 
-	// Create the HTTP client with a custom Transport to ignore self-signed certificates
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-		},
-	}
-
-	req, err := http.NewRequest("GET", url, nil)
+	body, err := common.MakeRequest("GET", url, profile, nil)
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		return fmt.Errorf("error fetching agents: %w", err)
 	}
 
-	// Add Authorization header with the profile's token
-	req.Header.Set("Authorization", getProfileToken(profile.Name))
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("request error: %w", err)
+	var response struct {
+		Data []map[string]interface{} `json:"data"`
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to fetch agents, status code: %d", resp.StatusCode)
-	}
-
-	// Parse the response
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("failed to read response: %w", err)
-	}
-
-	// Unmarshal the JSON response
-	var response map[string]interface{}
-	err = json.Unmarshal(body, &response)
-	if err != nil {
+	if err := json.Unmarshal(body, &response); err != nil {
 		return fmt.Errorf("failed to parse response: %w", err)
 	}
 
-	// Extract the "agents" field
-	agents, ok := response["data"].([]interface{})
-	if !ok {
-		return fmt.Errorf("response does not contain 'data' field or it is not an array")
-	}
+	filteredAgents := common.FilterItemsWithTags(response.Data, filter)
 
-	// Apply filtering if specified
-	var filteredAgents []interface{}
-	for _, agent := range agents {
-		agentMap, ok := agent.(map[string]interface{})
-		if !ok {
-			continue
-		}
-		if filterKey != "" && filterValue != "" {
-			if fmt.Sprintf("%v", agentMap[filterKey]) == filterValue {
-				filteredAgents = append(filteredAgents, agent)
-			}
-		} else {
-			filteredAgents = append(filteredAgents, agent)
-		}
-	}
-
-	// Convert the filtered agents to JSON
 	output, err := json.MarshalIndent(filteredAgents, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to serialize agents to JSON: %w", err)
 	}
 
-	// Print the JSON output
+	fmt.Println(string(output))
+	return nil
+}
+
+func describeAgent(profile types.Profile, agentId string) error {
+	url := fmt.Sprintf("https://%s:%s/api/agent/%s", profile.IP, profile.Port, agentId)
+
+	body, err := common.MakeRequest("GET", url, profile, nil)
+	if err != nil {
+		return fmt.Errorf("error fetching agent: %w", err)
+	}
+
+	var response map[string]interface{}
+	if err := json.Unmarshal(body, &response); err != nil {
+		return fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	agent, ok := response["data"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("response does not contain 'data' field or it is not an object")
+	}
+
+	output, err := json.MarshalIndent(agent, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to serialize agent to JSON: %w", err)
+	}
+
 	fmt.Println(string(output))
 	return nil
 }
