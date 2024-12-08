@@ -13,6 +13,7 @@ func ListCommand(args []string) {
 	listCmd := flag.NewFlagSet("list", flag.ExitOnError)
 	profileName := listCmd.String("profile", "", "The profile name to use")
 	filter := listCmd.String("filter", "", "Filter agents by criteria (e.g., 'tags.key=value')")
+	query := listCmd.String("query", "", "Comma-separated list of fields to include in the output")
 
 	listCmd.Parse(args)
 
@@ -28,7 +29,7 @@ func ListCommand(args []string) {
 
 	profile := common.GetCreds(selectedProfile)
 
-	err := fetchAgents(profile, *filter)
+	err := fetchAgents(profile, *filter, *query)
 	if err != nil {
 		fmt.Println("Error fetching agents:", err)
 		os.Exit(1)
@@ -70,7 +71,7 @@ func DescribeCommand(args []string) {
 	}
 }
 
-func fetchAgents(profile types.Credential, filter string) error {
+func fetchAgents(profile types.Credential, filter, query string) error {
 	url := fmt.Sprintf("https://%s:%s/api/agents", profile.IP, profile.Port)
 
 	body, err := common.MakeRequest("GET", url, profile, nil)
@@ -86,6 +87,10 @@ func fetchAgents(profile types.Credential, filter string) error {
 	}
 
 	filteredAgents := common.FilterItemsWithTags(response.Data, filter)
+
+	if query != "" {
+		filteredAgents = common.QueryFields(filteredAgents, query)
+	}
 
 	output, err := json.MarshalIndent(filteredAgents, "", "  ")
 	if err != nil {
