@@ -22,7 +22,7 @@ release:
 
 install:
 ifeq ($(OS),Windows_NT)
-	copy $(OUTDIR)\$(BINARY_NAME) %WINDIR%\System32\$(BINARY_NAME)
+	copy $(subst /,\\,$(OUTDIR))\\$(BINARY_NAME) %WINDIR%\System32\\$(BINARY_NAME)
 else
 	sudo install -m 755 $(OUTDIR)/$(BINARY_NAME) /usr/local/bin/$(BINARY_NAME)
 endif
