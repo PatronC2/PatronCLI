@@ -2,7 +2,15 @@
 
 This project creates a way to interact with Patron remotely via CLI.
 
-## Build
+## Install
+
+### Windows
+Run `.\install.ps1` from an elevated powershell
+
+### Linux
+Run `./install.sh` from an elevated shell
+
+# Build
 Docker and the docker buildx plugin must be installed and running 
 
 ### Windows
