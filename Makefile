@@ -1,11 +1,14 @@
 TAG ?= snapshot
-PLATFORM ?= linux
-BINARY_NAME = patron
-OUTDIR = output/$(PLATFORM)
 
-ifeq ($(PLATFORM),windows)
+ifeq ($(OS),Windows_NT)
+	PLATFORM := windows
 	BINARY_NAME := patron.exe
+else
+	PLATFORM ?= linux
+	BINARY_NAME = patron
 endif
+
+OUTDIR = output/$(PLATFORM)
 
 .PHONY: all local release install clean
 
