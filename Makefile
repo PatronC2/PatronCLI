@@ -1,7 +1,31 @@
-build:
-	docker build --build-arg GOOS=$(GOOS) --build-arg GOARCH=$(GOARCH) -t go-app-builder .
+TAG ?= snapshot
+
 ifeq ($(OS),Windows_NT)
-	docker run --rm -v "%cd%/output:/output" go-app-builder cp /root/main /output/patron.exe
+	PLATFORM := windows
+	BINARY_NAME := patron.exe
 else
-	docker run --rm -v "$(pwd)/output":/output go-app-builder cp /root/main /output/patron
+	PLATFORM ?= linux
+	BINARY_NAME = patron
 endif
+
+OUTDIR = output/$(PLATFORM)
+
+.PHONY: all local release install clean
+
+all: local install
+
+local:
+	docker buildx bake local
+
+release:
+	docker buildx bake release
+
+install:
+ifeq ($(OS),Windows_NT)
+	copy $(subst /,\\,$(OUTDIR))\\$(BINARY_NAME) %WINDIR%\System32\\$(BINARY_NAME)
+else
+	sudo install -m 755 $(OUTDIR)/$(BINARY_NAME) /usr/local/bin/$(BINARY_NAME)
+endif
+
+clean:
+	rm -rf output/
