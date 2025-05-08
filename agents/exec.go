@@ -17,7 +17,11 @@ func Execute(args []string) {
 	}{
 		"list": {
 			Execute: ListCommand,
-			Help:    "List all agents, optionally filtering by criteria.",
+			Help:    "DEPRECATED. USE 'patron agents search' instead. Lists all agents, optionally filtering by criteria.",
+		},
+		"search": {
+			Execute: SearchCommand,
+			Help:    "Search agents, optionally filtering by criteria.",
 		},
 		"describe": {
 			Execute: DescribeCommand,
