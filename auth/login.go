@@ -72,6 +72,12 @@ func performLogin(profileName string) {
 		Profile: profile.Name,
 		IP:      profile.IP,
 		Port:    profile.Port,
+
+		SOCKS5Enabled:  profile.SOCKS5Enabled,
+		SOCKS5Host:     profile.SOCKS5Host,
+		SOCKS5Port:     profile.SOCKS5Port,
+		SOCKS5Username: profile.SOCKS5Username,
+		SOCKS5Password: profile.SOCKS5Password,
 	}
 
 	responseBody, err := common.MakeRequest("POST", url, headers, requestBody)
@@ -93,10 +99,15 @@ func performLogin(profileName string) {
 	}
 
 	cred := types.Credential{
-		Profile: profile.Name,
-		IP:      profile.IP,
-		Port:    profile.Port,
-		Token:   token,
+		Profile:        profile.Name,
+		IP:             profile.IP,
+		Port:           profile.Port,
+		Token:          token,
+		SOCKS5Enabled:  profile.SOCKS5Enabled,
+		SOCKS5Host:     profile.SOCKS5Host,
+		SOCKS5Port:     profile.SOCKS5Port,
+		SOCKS5Username: profile.SOCKS5Username,
+		SOCKS5Password: profile.SOCKS5Password,
 	}
 	if err := config.SaveCredential(cred); err != nil {
 		fmt.Printf("Error saving credentials: %v\n", err)

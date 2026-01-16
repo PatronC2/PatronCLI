@@ -2,24 +2,66 @@ package common
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"patroncli/config"
 	"patroncli/types"
+	"time"
+
+	"golang.org/x/net/proxy"
 )
 
 // makeRequest is a generic function for API requests (GET, POST, PUT, DELETE)
 func MakeRequest(method, url string, profile types.Credential, body interface{}) ([]byte, error) {
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true, // Ignore self-signed certificates
-			},
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true, // Ignore self-signed certificates
 		},
+	}
+
+	// If SOCKS5 is configured, tunnel outbound connections through it.
+	if profile.SOCKS5Enabled {
+		if profile.SOCKS5Host == "" || profile.SOCKS5Port == "" {
+			return nil, fmt.Errorf("SOCKS5 proxy enabled but host/port not set")
+		}
+
+		proxyAddr := net.JoinHostPort(profile.SOCKS5Host, profile.SOCKS5Port)
+
+		var auth *proxy.Auth
+		if profile.SOCKS5Username != "" {
+			auth = &proxy.Auth{
+				User:     profile.SOCKS5Username,
+				Password: profile.SOCKS5Password,
+			}
+		}
+
+		dialer, err := proxy.SOCKS5("tcp", proxyAddr, auth, proxy.Direct)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create SOCKS5 dialer: %w", err)
+		}
+
+		// Prefer DialContext if supported; otherwise fallback to Dial (no ctx cancel).
+		type contextDialer interface {
+			DialContext(ctx context.Context, network, addr string) (net.Conn, error)
+		}
+
+		transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+			if cd, ok := dialer.(contextDialer); ok {
+				return cd.DialContext(ctx, network, addr)
+			}
+			return dialer.Dial(network, addr)
+		}
+	}
+
+	client := &http.Client{
+		Transport: transport,
+		Timeout:   30 * time.Second,
 	}
 
 	var bodyReader io.Reader
@@ -36,7 +78,6 @@ func MakeRequest(method, url string, profile types.Credential, body interface{})
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	// Add headers
 	req.Header.Set("Authorization", profile.Token)
 	req.Header.Set("Content-Type", "application/json")
 
@@ -47,7 +88,9 @@ func MakeRequest(method, url string, profile types.Credential, body interface{})
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("request failed with status code: %d", resp.StatusCode)
+		// (Optional) include body to make debugging easier:
+		b, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("request failed: status=%d body=%s", resp.StatusCode, string(b))
 	}
 
 	responseData, err := io.ReadAll(resp.Body)

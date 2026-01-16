@@ -75,12 +75,41 @@ func Configure() {
 		loginTime = 8
 	}
 
+	// SOCKS5 proxy prompts
+	fmt.Print("Use SOCKS5 proxy? (y/N): ")
+	useProxyIn, _ := reader.ReadString('\n')
+	useProxy := strings.EqualFold(strings.TrimSpace(useProxyIn), "y") ||
+		strings.EqualFold(strings.TrimSpace(useProxyIn), "yes")
+
+	var proxyHost, proxyPort, proxyUser, proxyPass string
+	if useProxy {
+		fmt.Print("SOCKS5 proxy host (e.g. 127.0.0.1): ")
+		proxyHost, _ = reader.ReadString('\n')
+
+		fmt.Print("SOCKS5 proxy port (e.g. 1080): ")
+		proxyPort, _ = reader.ReadString('\n')
+
+		fmt.Print("SOCKS5 username (blank for none): ")
+		proxyUser, _ = reader.ReadString('\n')
+
+		if strings.TrimSpace(proxyUser) != "" {
+			fmt.Print("SOCKS5 password: ")
+			proxyPass, _ = reader.ReadString('\n')
+		}
+	}
+
 	profile := types.Profile{
 		Name:      strings.TrimSpace(profileName),
 		IP:        strings.TrimSpace(apiIP),
 		Port:      strings.TrimSpace(apiPort),
 		Username:  strings.TrimSpace(username),
 		LoginTime: loginTime,
+
+		SOCKS5Enabled:  useProxy,
+		SOCKS5Host:     strings.TrimSpace(proxyHost),
+		SOCKS5Port:     strings.TrimSpace(proxyPort),
+		SOCKS5Username: strings.TrimSpace(proxyUser),
+		SOCKS5Password: strings.TrimSpace(proxyPass),
 	}
 
 	err = SaveProfile(profile)
