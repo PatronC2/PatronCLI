@@ -5,9 +5,20 @@ import (
 	"os"
 	"patroncli/agents"
 	"patroncli/auth"
+	"patroncli/version"
 )
 
 func main() {
+	if len(os.Args) >= 2 {
+		switch os.Args[1] {
+		case "--version", "-v", "version":
+			fmt.Printf("patron %s\n", version.Tag)
+			fmt.Printf("patron %s (%s) %s\n", version.Tag, version.Commit, version.Date)
+			return
+		}
+	}
+
+	// existing command map...
 	var commands map[string]struct {
 		Execute func(args []string)
 		Help    string

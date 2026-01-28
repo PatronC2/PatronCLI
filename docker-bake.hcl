@@ -14,10 +14,6 @@ variable "GOARCH" {
   default = "amd64"
 }
 
-variable "TAG" {
-  default = "latest"
-}
-
 target "builder-base" {
   dockerfile = "Dockerfile"
   context = "."
@@ -29,6 +25,7 @@ target "builder-linux-local" {
     GOOS = "linux"
     GOARCH = "amd64"
     BINARY_NAME = "patron"
+    TAG         = "${TAG}" 
   }
   tags = [
     "${REGISTRY}/cli:linux-${TAG}",
@@ -43,6 +40,7 @@ target "builder-windows-local" {
     GOOS = "windows"
     GOARCH = "amd64"
     BINARY_NAME = "patron.exe"
+    TAG         = "${TAG}" 
   }
   tags = [
     "${REGISTRY}/cli:windows-${TAG}",
