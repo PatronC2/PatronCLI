@@ -143,6 +143,8 @@ func SearchCommand(args []string) {
 	limit := searchCmd.Int("limit", 20, "Number of results")
 	offset := searchCmd.Int("offset", 0, "Offset for pagination")
 
+	query := searchCmd.String("query", "", "Comma-separated list of fields to include in the output")
+
 	searchCmd.Parse(args)
 
 	selectedProfile := os.Getenv("PATRON_PROFILE")
@@ -157,16 +159,26 @@ func SearchCommand(args []string) {
 
 	profile := common.GetCreds(selectedProfile)
 
-	tagList := strings.Split(*tags, ",")
-	err := searchAgents(profile, *hostname, *ip, *status, *logic, tagList, *sort, *limit, *offset)
+	var tagList []string
+	if strings.TrimSpace(*tags) != "" {
+		tagList = strings.Split(*tags, ",")
+	}
 
+	err := searchAgents(profile, *hostname, *ip, *status, *logic, tagList, *sort, *limit, *offset, *query)
 	if err != nil {
 		fmt.Println("Error fetching agents:", err)
 		os.Exit(1)
 	}
 }
 
-func searchAgents(profile types.Credential, hostname, ip, status, logic string, tags []string, sort string, limit, offset int) error {
+func searchAgents(
+	profile types.Credential,
+	hostname, ip, status, logic string,
+	tags []string,
+	sort string,
+	limit, offset int,
+	query string,
+) error {
 	baseUrl := fmt.Sprintf("https://%s:%s/api/agents/search", profile.IP, profile.Port)
 	queryParams := url.Values{}
 
@@ -192,6 +204,10 @@ func searchAgents(profile types.Credential, hostname, ip, status, logic string, 
 		queryParams.Add("offset", strconv.Itoa(offset))
 	}
 	for _, tag := range tags {
+		tag = strings.TrimSpace(tag)
+		if tag == "" {
+			continue
+		}
 		queryParams.Add("tag", tag)
 	}
 
@@ -210,7 +226,12 @@ func searchAgents(profile types.Credential, hostname, ip, status, logic string, 
 		return fmt.Errorf("failed to parse response: %w", err)
 	}
 
-	output, err := json.MarshalIndent(response.Data, "", "  ")
+	items := response.Data
+	if query != "" {
+		items = common.QueryFields(items, query)
+	}
+
+	output, err := json.MarshalIndent(items, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to serialize agents to JSON: %w", err)
 	}
