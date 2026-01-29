@@ -2,6 +2,14 @@ variable "TAG" {
   default = "snapshot"
 }
 
+variable "COMMIT" {
+  default = "unknown"
+}
+
+variable "BUILD_DATE" {
+  default = "unknown"
+}
+
 variable "REGISTRY" {
   default = "patronc2"
 }
@@ -22,10 +30,12 @@ target "builder-base" {
 target "builder-linux-local" {
   inherits = ["builder-base"]
   args = {
-    GOOS = "linux"
-    GOARCH = "amd64"
+    GOOS        = "linux"
+    GOARCH      = "amd64"
     BINARY_NAME = "patron"
     TAG         = "${TAG}" 
+    COMMIT      = "${COMMIT}"
+    BUILD_DATE  = "${BUILD_DATE}"
   }
   tags = [
     "${REGISTRY}/cli:linux-${TAG}",
@@ -41,6 +51,8 @@ target "builder-windows-local" {
     GOARCH = "amd64"
     BINARY_NAME = "patron.exe"
     TAG         = "${TAG}" 
+    COMMIT      = "${COMMIT}"
+    BUILD_DATE  = "${BUILD_DATE}"
   }
   tags = [
     "${REGISTRY}/cli:windows-${TAG}",
