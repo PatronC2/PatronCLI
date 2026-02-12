@@ -27,6 +27,14 @@ func Execute(args []string) {
 			Execute: GetUsersCommand,
 			Help:    "Get admin users list.",
 		},
+		"set-log-level": {
+			Execute: SetLogLevelCommand,
+			Help:    "Set log level for an app (use --app and --log-level).",
+		},
+		"set-log-size": {
+			Execute: SetLogSizeCommand,
+			Help:    "Set max log file size for an app (use --app, --size, --unit).",
+		},
 		"help": {
 			Execute: func(args []string) { displayHelp(commands) },
 			Help:    "Show this help menu.",
