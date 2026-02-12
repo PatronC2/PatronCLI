@@ -1,4 +1,4 @@
-package agents
+package admin
 
 import (
 	"fmt"
@@ -15,21 +15,37 @@ func Execute(args []string) {
 		Execute func(args []string)
 		Help    string
 	}{
-		"search": {
-			Execute: SearchCommand,
-			Help:    "Search agents, optionally filtering by criteria.",
+		"get-log-size": {
+			Execute: GetLogSizeCommand,
+			Help:    "Get max log file size for an app (use --app).",
 		},
-		"describe": {
-			Execute: DescribeCommand,
-			Help:    "Describe a specific agent using --agent-id.",
+		"get-log-level": {
+			Execute: GetLogLevelCommand,
+			Help:    "Get current log level for an app (use --app).",
 		},
-		"send-command": {
-			Execute: ExecCommand,
-			Help:    "Send a command to an agent using --agent-id and --command.",
+		"get-users": {
+			Execute: GetUsersCommand,
+			Help:    "Get admin users list.",
 		},
-		"get-commands": {
-			Execute: GetCommands,
-			Help:    "Retrieve command responses from an agent using --agent-id.",
+		"set-log-level": {
+			Execute: SetLogLevelCommand,
+			Help:    "Set log level for an app (use --app and --log-level).",
+		},
+		"set-log-size": {
+			Execute: SetLogSizeCommand,
+			Help:    "Set max log file size for an app (use --app, --size, --unit).",
+		},
+		"create-user": {
+			Execute: CreateUserCommand,
+			Help:    "Create an admin user (use --username, --role, --password, --confirm-password).",
+		},
+		"delete-user": {
+			Execute: DeleteUserCommand,
+			Help:    "Delete an admin user (use --username).",
+		},
+		"update-user": {
+			Execute: UpdateUserCommand,
+			Help:    "Update an admin user (use --username and --new-password and/or --new-role).",
 		},
 		"help": {
 			Execute: func(args []string) { displayHelp(commands) },

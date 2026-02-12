@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"patroncli/admin"
 	"patroncli/agents"
 	"patroncli/auth"
 	"patroncli/version"
@@ -30,6 +31,10 @@ func main() {
 		"auth": {
 			Execute: auth.Execute,
 			Help:    "Commands for authentication (e.g., configure, login).",
+		},
+		"admin": {
+			Execute: admin.Execute,
+			Help:    "Commands for administrators (e.g. get-log-size, add-user).",
 		},
 		"agents": {
 			Execute: agents.Execute,

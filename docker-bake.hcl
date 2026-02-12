@@ -14,6 +14,10 @@ variable "REGISTRY" {
   default = "patronc2"
 }
 
+variable GO_VERSION {
+  default = "1.25.6"
+}
+
 variable "GOOS" {
   default = "linux"
 }
@@ -27,9 +31,23 @@ target "builder-base" {
   context = "."
 }
 
+target "test-base" {
+  dockerfile = "Dockerfile.tests"
+  context = "."
+}
+
+target "tests" {
+  inherits = ["test-base"]
+  args = {
+    GO_VERSION = "${GO_VERSION}"
+  }
+  output = ["type=cacheonly"]
+}
+
 target "builder-linux-local" {
   inherits = ["builder-base"]
   args = {
+    GO_VERSION  = "${GO_VERSION}"
     GOOS        = "linux"
     GOARCH      = "amd64"
     BINARY_NAME = "patron"
@@ -47,6 +65,7 @@ target "builder-linux-local" {
 target "builder-windows-local" {
   inherits = ["builder-base"]
   args = {
+    GO_VERSION  = "${GO_VERSION}"
     GOOS = "windows"
     GOARCH = "amd64"
     BINARY_NAME = "patron.exe"

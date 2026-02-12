@@ -12,15 +12,20 @@ endif
 
 OUTDIR = output/$(PLATFORM)
 
-.PHONY: all local release install clean
+.PHONY: all local release install clean tests
 
 all: local install
 
 local:
+	TAG=$(TAG) COMMIT=$(COMMIT) BUILD_DATE=$(BUILD_DATE) docker buildx bake tests
 	TAG=$(TAG) COMMIT=$(COMMIT) BUILD_DATE=$(BUILD_DATE) docker buildx bake local
 
 release:
+	TAG=$(TAG) COMMIT=$(COMMIT) BUILD_DATE=$(BUILD_DATE) docker buildx bake tests
 	TAG=$(TAG) COMMIT=$(COMMIT) BUILD_DATE=$(BUILD_DATE) docker buildx bake release
+
+test:
+	TAG=$(TAG) COMMIT=$(COMMIT) BUILD_DATE=$(BUILD_DATE) docker buildx bake tests
 
 install:
 ifeq ($(OS),Windows_NT)
