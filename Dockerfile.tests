@@ -1,0 +1,17 @@
+ARG GO_VERSION=1.25.6
+
+FROM golang:${GO_VERSION}
+WORKDIR /app
+
+ARG GOOS=linux
+ARG GOARCH=amd64
+ARG BINARY_NAME=patron
+
+ARG TAG=snapshot
+ARG COMMIT=unknown
+ARG BUILD_DATE=unknown
+
+COPY go.mod ./
+RUN go mod download
+COPY . .
+RUN go test ./...

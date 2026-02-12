@@ -1,4 +1,6 @@
-FROM golang:1.25.6 AS builder
+ARG GO_VERSION=1.25.6
+
+FROM golang:${GO_VERSION} AS builder
 WORKDIR /app
 
 ARG GOOS=linux
@@ -23,10 +25,8 @@ RUN mkdir -p /output && \
       -o /output/${BINARY_NAME} .
 
 # Final image
-FROM alpine:latest
+FROM scratch
 
 WORKDIR /
 ARG BINARY_NAME=patron
 COPY --from=builder /output/${BINARY_NAME} .
-
-ENTRYPOINT ["/bin/true"]

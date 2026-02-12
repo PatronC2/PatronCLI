@@ -15,10 +15,6 @@ func Execute(args []string) {
 		Execute func(args []string)
 		Help    string
 	}{
-		"list": {
-			Execute: ListCommand,
-			Help:    "DEPRECATED. USE 'patron agents search' instead. Lists all agents, optionally filtering by criteria.",
-		},
 		"search": {
 			Execute: SearchCommand,
 			Help:    "Search agents, optionally filtering by criteria.",
