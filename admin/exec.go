@@ -35,6 +35,14 @@ func Execute(args []string) {
 			Execute: SetLogSizeCommand,
 			Help:    "Set max log file size for an app (use --app, --size, --unit).",
 		},
+		"create-user": {
+			Execute: CreateUserCommand,
+			Help:    "Create an admin user (use --username, --role, --password, --confirm-password).",
+		},
+		"delete-user": {
+			Execute: DeleteUserCommand,
+			Help:    "Delete an admin user (use --username).",
+		},
 		"help": {
 			Execute: func(args []string) { displayHelp(commands) },
 			Help:    "Show this help menu.",
