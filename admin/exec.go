@@ -43,6 +43,10 @@ func Execute(args []string) {
 			Execute: DeleteUserCommand,
 			Help:    "Delete an admin user (use --username).",
 		},
+		"update-user": {
+			Execute: UpdateUserCommand,
+			Help:    "Update an admin user (use --username and --new-password and/or --new-role).",
+		},
 		"help": {
 			Execute: func(args []string) { displayHelp(commands) },
 			Help:    "Show this help menu.",
