@@ -23,6 +23,10 @@ func Execute(args []string) {
 			Execute: GetLogLevelCommand,
 			Help:    "Get current log level for an app (use --app).",
 		},
+		"get-users": {
+			Execute: GetUsersCommand,
+			Help:    "Get admin users list.",
+		},
 		"help": {
 			Execute: func(args []string) { displayHelp(commands) },
 			Help:    "Show this help menu.",
