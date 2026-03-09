@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net"
 	"net/http"
 	"os"
@@ -17,8 +18,7 @@ import (
 	"golang.org/x/net/proxy"
 )
 
-// makeRequest is a generic function for API requests (GET, POST, PUT, DELETE)
-func MakeRequest(method, url string, profile types.Credential, body interface{}) ([]byte, error) {
+func buildHTTPClient(profile types.Credential) (*http.Client, error) {
 	transport := &http.Transport{
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true, // Ignore self-signed certificates
@@ -59,9 +59,17 @@ func MakeRequest(method, url string, profile types.Credential, body interface{})
 		}
 	}
 
-	client := &http.Client{
+	return &http.Client{
 		Transport: transport,
 		Timeout:   30 * time.Second,
+	}, nil
+}
+
+// MakeRequest is a generic function for API requests (GET, POST, PUT, DELETE).
+func MakeRequest(method, url string, profile types.Credential, body interface{}) ([]byte, error) {
+	client, err := buildHTTPClient(profile)
+	if err != nil {
+		return nil, err
 	}
 
 	var bodyReader io.Reader
@@ -88,7 +96,6 @@ func MakeRequest(method, url string, profile types.Credential, body interface{})
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
-		// (Optional) include body to make debugging easier:
 		b, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("request failed: status=%d body=%s", resp.StatusCode, string(b))
 	}
@@ -98,6 +105,61 @@ func MakeRequest(method, url string, profile types.Credential, body interface{})
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
+	return responseData, nil
+}
+
+// MakeMultipartRequest sends a multipart/form-data request with fields and an optional file part.
+func MakeMultipartRequest(method, url string, profile types.Credential, fields map[string]string, fileField, fileName string, fileContent []byte) ([]byte, error) {
+	client, err := buildHTTPClient(profile)
+	if err != nil {
+		return nil, err
+	}
+
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+
+	for k, v := range fields {
+		if err := writer.WriteField(k, v); err != nil {
+			return nil, fmt.Errorf("failed to write multipart field %q: %w", k, err)
+		}
+	}
+
+	if fileField != "" {
+		part, err := writer.CreateFormFile(fileField, fileName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create multipart file part: %w", err)
+		}
+		if _, err := part.Write(fileContent); err != nil {
+			return nil, fmt.Errorf("failed to write multipart file content: %w", err)
+		}
+	}
+
+	if err := writer.Close(); err != nil {
+		return nil, fmt.Errorf("failed to finalize multipart body: %w", err)
+	}
+
+	req, err := http.NewRequest(method, url, &body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Authorization", profile.Token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request error: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		b, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("request failed: status=%d body=%s", resp.StatusCode, string(b))
+	}
+
+	responseData, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
 	return responseData, nil
 }
 
