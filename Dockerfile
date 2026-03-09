@@ -30,3 +30,5 @@ FROM scratch
 WORKDIR /
 ARG BINARY_NAME=patron
 COPY --from=builder /output/${BINARY_NAME} .
+
+CMD [ "/${BINARY_NAME}" ]
