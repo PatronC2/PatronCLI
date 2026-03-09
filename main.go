@@ -6,6 +6,7 @@ import (
 	"patroncli/admin"
 	"patroncli/agents"
 	"patroncli/auth"
+	"patroncli/redirectors"
 	"patroncli/version"
 )
 
@@ -34,11 +35,15 @@ func main() {
 		},
 		"admin": {
 			Execute: admin.Execute,
-			Help:    "Commands for administrators (e.g. get-log-size, add-user).",
+			Help:    "Commands for administrators (e.g. get-log-size, create-user).",
 		},
 		"agents": {
 			Execute: agents.Execute,
 			Help:    "Commands for managing agents (e.g., list).",
+		},
+		"redirectors": {
+			Execute: redirectors.Execute,
+			Help:    "Commands for managing redirectors (e.g., list, create).",
 		},
 		"help": {
 			Execute: func(args []string) { showHelp(commands) },
