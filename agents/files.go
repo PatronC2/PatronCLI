@@ -40,7 +40,7 @@ func ListFilesCommand(args []string) {
 }
 
 func listFiles(profile types.Credential, agentID, query string) error {
-	url := fmt.Sprintf("https://%s:%s/api/files/list/%s", profile.IP, profile.Port, agentID)
+	url := fmt.Sprintf("https://%s:%s/api/agents/files/list/%s", profile.IP, profile.Port, agentID)
 	body, err := common.MakeRequest("GET", url, profile, nil)
 	if err != nil {
 		return fmt.Errorf("error listing files: %w", err)
@@ -169,7 +169,7 @@ func uploadFile(profile types.Credential, agentID, targetPath, sourcePath, trans
 		"transfertype": transferType,
 	}
 
-	url := fmt.Sprintf("https://%s:%s/api/files/upload", profile.IP, profile.Port)
+	url := fmt.Sprintf("https://%s:%s/api/agents/files/upload", profile.IP, profile.Port)
 	if transferType == "Upload" {
 		body, err := common.MakeMultipartRequest("POST", url, profile, fields, "", "", nil)
 		if err != nil {
