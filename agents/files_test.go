@@ -16,7 +16,7 @@ func TestListFiles_SuccessWithQuery(t *testing.T) {
 		if r.Method != http.MethodGet {
 			t.Fatalf("unexpected method: %s", r.Method)
 		}
-		if r.URL.Path != "/api/files/list/agent-1" {
+		if r.URL.Path != "/api/agents/files/list/agent-1" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
 		_, _ = w.Write([]byte(`{"data":[{"FileID":1,"Path":"/tmp/a","Status":"ready"}]}`))
@@ -108,7 +108,7 @@ func TestUploadFile_UploadTypeWithoutDiskRead(t *testing.T) {
 		if r.Method != http.MethodPost {
 			t.Fatalf("unexpected method: %s", r.Method)
 		}
-		if r.URL.Path != "/api/files/upload" {
+		if r.URL.Path != "/api/agents/files/upload" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
 
