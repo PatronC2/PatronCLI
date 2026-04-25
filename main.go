@@ -3,11 +3,24 @@ package main
 import (
 	"fmt"
 	"os"
+	"patroncli/admin"
 	"patroncli/agents"
 	"patroncli/auth"
+	"patroncli/files"
+	"patroncli/redirectors"
+	"patroncli/version"
 )
 
 func main() {
+	if len(os.Args) >= 2 {
+		switch os.Args[1] {
+		case "--version", "-v", "version":
+			fmt.Printf("patron %s (%s) %s\n", version.Tag, version.Commit, version.Date)
+			return
+		}
+	}
+
+	// existing command map...
 	var commands map[string]struct {
 		Execute func(args []string)
 		Help    string
@@ -21,9 +34,21 @@ func main() {
 			Execute: auth.Execute,
 			Help:    "Commands for authentication (e.g., configure, login).",
 		},
+		"admin": {
+			Execute: admin.Execute,
+			Help:    "Commands for administrators (e.g. get-log-size, create-user).",
+		},
 		"agents": {
 			Execute: agents.Execute,
 			Help:    "Commands for managing agents (e.g., list).",
+		},
+		"files": {
+			Execute: files.Execute,
+			Help:    "Commands for searching and managing files.",
+		},
+		"redirectors": {
+			Execute: redirectors.Execute,
+			Help:    "Commands for managing redirectors (e.g., list, create).",
 		},
 		"help": {
 			Execute: func(args []string) { showHelp(commands) },

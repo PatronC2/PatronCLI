@@ -15,10 +15,6 @@ func Execute(args []string) {
 		Execute func(args []string)
 		Help    string
 	}{
-		"list": {
-			Execute: ListCommand,
-			Help:    "DEPRECATED. USE 'patron agents search' instead. Lists all agents, optionally filtering by criteria.",
-		},
 		"search": {
 			Execute: SearchCommand,
 			Help:    "Search agents, optionally filtering by criteria.",
@@ -34,6 +30,30 @@ func Execute(args []string) {
 		"get-commands": {
 			Execute: GetCommands,
 			Help:    "Retrieve command responses from an agent using --agent-id.",
+		},
+		"get-tags": {
+			Execute: GetTagsCommand,
+			Help:    "Get tags for an agent using --agent-id.",
+		},
+		"put-tag": {
+			Execute: PutTagCommand,
+			Help:    "Set/update a tag for one or more agents using --agents, --key, --value.",
+		},
+		"delete-tag": {
+			Execute: DeleteTagCommand,
+			Help:    "Delete a tag by ID using --tag-id.",
+		},
+		"list-files": {
+			Execute: ListFilesCommand,
+			Help:    "List files for an agent using --agent-id.",
+		},
+		"download-file": {
+			Execute: DownloadFileCommand,
+			Help:    "Download a file by ID to local disk using --file-id and --output.",
+		},
+		"upload-file": {
+			Execute: UploadFileCommand,
+			Help:    "Upload/queue a file operation using --agent-id, --path, --transfer-type, [--source].",
 		},
 		"help": {
 			Execute: func(args []string) { displayHelp(commands) },

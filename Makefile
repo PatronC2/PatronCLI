@@ -1,4 +1,6 @@
 TAG ?= snapshot
+COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
+BUILD_DATE := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 ifeq ($(OS),Windows_NT)
 	PLATFORM := windows
@@ -10,15 +12,20 @@ endif
 
 OUTDIR = output/$(PLATFORM)
 
-.PHONY: all local release install clean
+.PHONY: all local release install clean tests
 
 all: local install
 
 local:
-	docker buildx bake local
+	TAG=$(TAG) COMMIT=$(COMMIT) BUILD_DATE=$(BUILD_DATE) docker buildx bake tests
+	TAG=$(TAG) COMMIT=$(COMMIT) BUILD_DATE=$(BUILD_DATE) docker buildx bake local
 
 release:
-	docker buildx bake release
+	TAG=$(TAG) COMMIT=$(COMMIT) BUILD_DATE=$(BUILD_DATE) docker buildx bake tests
+	TAG=$(TAG) COMMIT=$(COMMIT) BUILD_DATE=$(BUILD_DATE) docker buildx bake release
+
+test:
+	TAG=$(TAG) COMMIT=$(COMMIT) BUILD_DATE=$(BUILD_DATE) docker buildx bake tests
 
 install:
 ifeq ($(OS),Windows_NT)

@@ -1,4 +1,4 @@
-package agents
+package files
 
 import (
 	"encoding/json"
@@ -15,15 +15,10 @@ import (
 func SearchCommand(args []string) {
 	searchCmd := flag.NewFlagSet("search", flag.ExitOnError)
 	profileName := searchCmd.String("profile", "", "The profile name to use")
-	hostname := searchCmd.String("hostname", "", "Hostname filter")
-	ip := searchCmd.String("ip", "", "IP filter")
-	status := searchCmd.String("status", "", "Status filter (Online/Offline)")
 	logic := searchCmd.String("logic", "or", "Tag logic (or/and)")
 	tags := searchCmd.String("tags", "", "Comma-separated tag filters (e.g. key:value,key2:value2)")
-	sort := searchCmd.String("sort", "", "Sort field (e.g. hostname:asc)")
 	limit := searchCmd.Int("limit", 20, "Number of results")
 	offset := searchCmd.Int("offset", 0, "Offset for pagination")
-
 	query := searchCmd.String("query", "", "Comma-separated list of fields to include in the output")
 
 	searchCmd.Parse(args)
@@ -45,38 +40,19 @@ func SearchCommand(args []string) {
 		tagList = strings.Split(*tags, ",")
 	}
 
-	err := searchAgents(profile, *hostname, *ip, *status, *logic, tagList, *sort, *limit, *offset, *query)
+	err := searchFiles(profile, *logic, tagList, *limit, *offset, *query)
 	if err != nil {
-		fmt.Println("Error fetching agents:", err)
+		fmt.Println("Error fetching files:", err)
 		os.Exit(1)
 	}
 }
 
-func searchAgents(
-	profile types.Credential,
-	hostname, ip, status, logic string,
-	tags []string,
-	sort string,
-	limit, offset int,
-	query string,
-) error {
-	baseUrl := fmt.Sprintf("https://%s:%s/api/agents/search", profile.IP, profile.Port)
+func searchFiles(profile types.Credential, logic string, tags []string, limit, offset int, query string) error {
+	baseURL := fmt.Sprintf("https://%s:%s/api/files/list", profile.IP, profile.Port)
 	queryParams := url.Values{}
 
-	if hostname != "" {
-		queryParams.Add("hostname", hostname)
-	}
-	if ip != "" {
-		queryParams.Add("ip", ip)
-	}
-	if status != "" {
-		queryParams.Add("status", status)
-	}
 	if logic != "" {
 		queryParams.Add("logic", logic)
-	}
-	if sort != "" {
-		queryParams.Add("sort", sort)
 	}
 	if limit > 0 {
 		queryParams.Add("limit", strconv.Itoa(limit))
@@ -92,16 +68,20 @@ func searchAgents(
 		queryParams.Add("tag", tag)
 	}
 
-	fullUrl := baseUrl + "?" + queryParams.Encode()
+	fullURL := baseURL
+	if encoded := queryParams.Encode(); encoded != "" {
+		fullURL += "?" + encoded
+	}
 
-	body, err := common.MakeRequest("GET", fullUrl, profile, nil)
+	body, err := common.MakeRequest("GET", fullURL, profile, nil)
 	if err != nil {
-		return fmt.Errorf("error fetching agents: %w", err)
+		return fmt.Errorf("error fetching files: %w", err)
 	}
 
 	var response struct {
 		Data       []map[string]interface{} `json:"data"`
 		TotalCount int                      `json:"totalCount"`
+		NextOffset int                      `json:"nextOffset"`
 	}
 	if err := json.Unmarshal(body, &response); err != nil {
 		return fmt.Errorf("failed to parse response: %w", err)
@@ -114,7 +94,7 @@ func searchAgents(
 
 	output, err := json.MarshalIndent(items, "", "  ")
 	if err != nil {
-		return fmt.Errorf("failed to serialize agents to JSON: %w", err)
+		return fmt.Errorf("failed to serialize files to JSON: %w", err)
 	}
 
 	fmt.Println(string(output))
